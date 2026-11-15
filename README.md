@@ -12,7 +12,7 @@
 6. **Core Shell Tooling & Resilient Scripting:** Text parsing primitives (`grep -E`, `awk`, `sed`, `find`, `xargs`); production bash standards (`set -euo pipefail`, trap handlers, `&> /dev/null`).
 
 ---
-
+---
 #### **Phase 2: Storage Subsystems, Filesystems, LVM & OverlayFS**
 
 7. **Block Devices, Superblocks & Inode Mechanics:** Inode table structure vs raw storage data blocks; inode starvation (`df -i` at 100%, `df -h` empty) throwing `No space left on device`; streaming deletion via `find /path -type f -delete` to avoid shell `ARG_MAX` buffer overflows.
@@ -22,7 +22,7 @@
 11. **Filesystem Layering (OverlayFS):** Architecture (`lowerdir`, `upperdir`, `workdir`, `merged`); how container image layers function natively on disk.
 
 ---
-
+---
 #### **Phase 3: Service Management, Systemd & Complete Boot Chain**
 
 12. **The Complete Linux Boot Chain:** Stages: `UEFI/BIOS` -> `GRUB2` (kernel arguments, `init=/bin/bash` recovery) -> `initramfs` (early storage drivers) -> Kernel execution -> `systemd (PID 1)`.
