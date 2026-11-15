@@ -2,24 +2,23 @@
 ### Enterprise Systems, Networking & Cloud Architecture Track
 ---
 #### **Phase 1: Process, CPU, Memory Internals & Core Shell Tooling**
-
+---
 1. **Process Lifecycles & Signals:** States (`R`, `S`, `D`, `Z`); defunct & orphan processes; why `kill -9` fails on zombies; reaping via PID 1 (`systemd`).
 2. **File Descriptors & Inode Mechanics:** Virtual filesystem tables (`/proc/<PID>/fd/`); resolving 100% ghost disk leaks from deleted-but-open files via truncation (`: > /proc/<PID>/fd/<FD>`).
 3. **Memory Sizing & Paging Mechanics:** VSS (`VmSize`) vs RSS (`VmRSS`) vs PSS (`/proc/<PID>/smaps_rollup`); page cache, dirty pages writeback daemon (`kswapd`/`flush`), and swap thrashing diagnostics.
 4. **The Out-Of-Memory (OOM) Subsystem:** Memory overcommit settings (`/proc/sys/vm/overcommit_memory`); kernel badness scoring (`oom_score`, `oom_score_adj`); kernel ring buffer forensics via `dmesg -T`.
 5. **CPU Scheduling & Queue Depth Mechanics:** Load Average as total queue depth (`R` + `D` tasks); high compute saturation vs storage wait; `vmstat 1` triage matrix (`r`, `b`, `us`, `wa`, `so`, `si`).
 6. **Core Shell Tooling & Resilient Scripting:** Text parsing primitives (`grep -E`, `awk`, `sed`, `find`, `xargs`); production bash standards (`set -euo pipefail`, trap handlers, `&> /dev/null`).
-
 ---
 ---
 #### **Phase 2: Storage Subsystems, Filesystems, LVM & OverlayFS**
-
+---
 7. **Block Devices, Superblocks & Inode Mechanics:** Inode table structure vs raw storage data blocks; inode starvation (`df -i` at 100%, `df -h` empty) throwing `No space left on device`; streaming deletion via `find /path -type f -delete` to avoid shell `ARG_MAX` buffer overflows.
 8. **Logical Volume Manager (LVM) Hierarchy:** 3-tier mapping (`pvcreate` -> `vgcreate` -> `lvcreate`); online, zero-downtime block growth via `lvextend -r`.
 9. **Filesystem Internals & Resilience:** `ext4` vs `XFS` operational differences (one-way expansion vs shrinking limitations); filesystem repair tools (`fsck`, `xfs_repair`) and journal verification.
 10. **Storage Mounting & Persistence:** Persistent UUID mounting (`/etc/fstab`) to avoid device node letter swapping (`/dev/sdX`); preventing boot failure drops (`emergency.target`) using `nofail`; cloud disk decommissioning order (`umount` -> fstab removal -> `mount -a` -> `lvremove` -> `vgremove` -> `pvremove`).
 11. **Filesystem Layering (OverlayFS):** Architecture (`lowerdir`, `upperdir`, `workdir`, `merged`); how container image layers function natively on disk.
-
+---
 ---
 ---
 #### **Phase 3: Service Management, Systemd & Complete Boot Chain**
