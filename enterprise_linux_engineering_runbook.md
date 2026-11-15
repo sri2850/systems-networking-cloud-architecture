@@ -783,3 +783,129 @@ When an application fails to communicate or serve requests, diagnose in this ord
   systemctl status <SERVICE_NAME>
   sudo journalctl -u <SERVICE_NAME> -b --no-pager -n 50
   ```
+
+## Phase 8: Advanced Performance Observability & Tracing (Brendan Gregg Methodology)
+
+### 34. The USE Diagnostic Framework
+* **Concept:** Systematically evaluates **Utilization** (% time busy), **Saturation** (queued or delayed work), and **Errors** (error counters) across CPU, Memory, Storage, and Network before guessing bottlenecks.
+
+* **Install `sysstat` utilities (`iostat`, `sar`, `pidstat`) when missing:**
+  ```bash
+  sudo apt-get update && sudo apt-get install -y sysstat
+  ```
+* **Audit CPU run-queue saturation (`r` vs core count), I/O wait (`wa`), and swap paging (`si`/`so`):**
+  ```bash
+  vmstat 1 3
+  ```
+* **Audit block device utilization (`%util`), queue depth (`aqu-sz`), and latency (`r_await`/`w_await`):**
+  ```bash
+  iostat -xz 1 2
+  ```
+  *Note:* Ignore the first summary table (averages since boot) and read the second sample block for live interval metrics.
+* **Audit network interface packet `errors`, `dropped`, and `overrun` counters:**
+  ```bash
+  ip -s link show eth0
+  ```
+
+---
+
+### 35. Hardware Performance Counters & CPU Profiling (`perf`)
+* **Concept:** Measures CPU execution efficiency via hardware Performance Monitoring Unit (PMU) or kernel software counters, including **Instructions Per Cycle (IPC)**, to separate active instruction retirement from pipeline/cache stalls.
+
+* **Install `perf` tools matching the active Linux kernel:**
+  ```bash
+  sudo apt-get update && sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r)
+  ```
+* **Profile `task-clock`, user vs kernel (`sys`) time, context switches, page faults, and IPC across a command:**
+  ```bash
+  sudo perf stat dd if=/dev/zero of=/dev/null bs=1M count=2000
+  ```
+  *Note:* On smaller or shared cloud VM SKUs, raw `cpu-cycles` may report `<not supported>` if Hyper-V disables vPMU counters, falling back automatically to software counters.
+* **Inspect live top CPU symbols across kernel and user space in real time (press `q` to quit):**
+  ```bash
+  sudo perf top
+  ```
+
+---
+
+### 36. CPU Sampling & FlameGraph Visualization
+* **Concept:** Low-overhead timer-based stack sampling (`99 Hz`) into `perf.data` to inspect call chains and FlameGraphs (Y-axis = stack depth, X-axis = sampled CPU time width sorted alphabetically).
+
+* **Sample all CPUs at `99 Hz` with full call graphs (`-g`) for 5 seconds:**
+  ```bash
+  sudo perf record -F 99 -a -g -- sleep 5
+  ```
+* **Wrap a target workload directly inside `perf record` so short-lived processes are captured before exiting:**
+  ```bash
+  sudo perf record -F 99 -g -- bash -c 'dd if=/dev/urandom bs=1M count=50 2>/dev/null | gzip > /dev/null'
+  ```
+* **View sampled overhead percentages and call chains in terminal text mode:**
+  ```bash
+  sudo perf report --stdio -n --sort comm,dso,symbol | head -n 30
+  ```
+* **Clean up temporary `perf.data` trace file:**
+  ```bash
+  sudo rm -f perf.data
+  ```
+
+---
+
+### 37. Off-CPU vs. On-CPU Analysis
+* **Concept:** Separates time spent actively computing on CPU (`On-CPU`) from time spent sleeping or blocked waiting on disk I/O, network replies, timers, or locks (`Off-CPU`).
+
+* **Track voluntary context switches (`cswch/s`, Off-CPU I/O or lock waits) vs involuntary context switches (`nvcswch/s`, On-CPU preemption) for a PID:**
+  ```bash
+  pidstat -w -p <PID> 1 3
+  ```
+* **Trigger synchronous disk writes (`oflag=dsync`) in the background to observe Off-CPU I/O blocking:**
+  ```bash
+  dd if=/dev/zero of=/tmp/offcpu_test.bin bs=1M count=200 oflag=dsync &
+  ```
+* **Remove temporary synchronous write test file:**
+  ```bash
+  rm -f /tmp/offcpu_test.bin
+  ```
+
+---
+
+### 38. Dynamic Kernel Tracing (`eBPF` & `bpftrace`)
+* **Concept:** Safe, verifier-checked in-kernel hooks (`tracepoint`, `kprobe`, `uprobe`) using `bpftrace` and BCC tools for real-time latency histograms and event tracing without kernel module crash risks.
+
+* **Install `bpftrace`, BCC tools, and matching kernel headers:**
+  ```bash
+  sudo apt-get update && sudo apt-get install -y bpftrace bpfcc-tools linux-headers-$(uname -r)
+  ```
+* **Trace every new process execution (`execve`) in real time—catches short-lived processes missed by `ps` or `top` (press `Ctrl+C` to stop):**
+  ```bash
+  sudo bpftrace -e 'tracepoint:syscalls:sys_enter_execve { printf("%-6d %-16s %s\n", pid, comm, str(args->filename)); }'
+  ```
+* **Collect a microsecond block I/O latency histogram (`@usecs`) and print on `Ctrl+C`:**
+  ```bash
+  sudo bpftrace -e 'tracepoint:block:block_rq_issue { @start[args->sector] = nsecs; } tracepoint:block:block_rq_complete /@start[args->sector]/ { @usecs = hist((nsecs - @start[args->sector]) / 1000); delete(@start[args->sector]); }'
+  ```
+* **Trace `openat` file opens across the host for 5 seconds to spot `ENOENT` (`-2`) missing paths or permission errors:**
+  ```bash
+  sudo timeout 5s opensnoop-bpfcc
+  ```
+
+---
+
+### 39. Dynamic Syscall Interception (`strace` & `ltrace`)
+* **Concept:** Uses `ptrace` to intercept system calls (`strace`) across the user-space-to-kernel boundary or shared library calls (`ltrace`) to isolate missing files, broken sockets, and silent hangs.
+
+* **Trace file-related syscalls (`openat`, `stat`, `access`) during command execution:**
+  ```bash
+  strace -e trace=file ls /tmp
+  ```
+* **Pinpoint missing config files or permission errors (`ENOENT`, `EACCES`) on `openat`:**
+  ```bash
+  strace -e trace=openat cat /etc/non_existent_app.conf
+  ```
+* **Print a summary table of syscall frequency, time spent, and error counts:**
+  ```bash
+  strace -c ls -la /etc > /dev/null
+  ```
+* **Attach to an already running process ID to observe live syscalls without killing it (press `Ctrl+C` to detach):**
+  ```bash
+  sudo strace -p <PID>
+  ```
