@@ -2,14 +2,13 @@
 ### Enterprise Systems, Networking & Cloud Architecture Track
 ---
 #### **Phase 1: Process, CPU, Memory Internals & Core Shell Tooling**
----
 1. **Process Lifecycles & Signals:** States (`R`, `S`, `D`, `Z`); defunct & orphan processes; why `kill -9` fails on zombies; reaping via PID 1 (`systemd`).
 2. **File Descriptors & Inode Mechanics:** Virtual filesystem tables (`/proc/<PID>/fd/`); resolving 100% ghost disk leaks from deleted-but-open files via truncation (`: > /proc/<PID>/fd/<FD>`).
 3. **Memory Sizing & Paging Mechanics:** VSS (`VmSize`) vs RSS (`VmRSS`) vs PSS (`/proc/<PID>/smaps_rollup`); page cache, dirty pages writeback daemon (`kswapd`/`flush`), and swap thrashing diagnostics.
 4. **The Out-Of-Memory (OOM) Subsystem:** Memory overcommit settings (`/proc/sys/vm/overcommit_memory`); kernel badness scoring (`oom_score`, `oom_score_adj`); kernel ring buffer forensics via `dmesg -T`.
 5. **CPU Scheduling & Queue Depth Mechanics:** Load Average as total queue depth (`R` + `D` tasks); high compute saturation vs storage wait; `vmstat 1` triage matrix (`r`, `b`, `us`, `wa`, `so`, `si`).
 6. **Core Shell Tooling & Resilient Scripting:** Text parsing primitives (`grep -E`, `awk`, `sed`, `find`, `xargs`); production bash standards (`set -euo pipefail`, trap handlers, `&> /dev/null`).
----
+
 ---
 #### **Phase 2: Storage Subsystems, Filesystems, LVM & OverlayFS**
 ---
@@ -18,11 +17,10 @@
 9. **Filesystem Internals & Resilience:** `ext4` vs `XFS` operational differences (one-way expansion vs shrinking limitations); filesystem repair tools (`fsck`, `xfs_repair`) and journal verification.
 10. **Storage Mounting & Persistence:** Persistent UUID mounting (`/etc/fstab`) to avoid device node letter swapping (`/dev/sdX`); preventing boot failure drops (`emergency.target`) using `nofail`; cloud disk decommissioning order (`umount` -> fstab removal -> `mount -a` -> `lvremove` -> `vgremove` -> `pvremove`).
 11. **Filesystem Layering (OverlayFS):** Architecture (`lowerdir`, `upperdir`, `workdir`, `merged`); how container image layers function natively on disk.
----
----
+
 ---
 #### **Phase 3: Service Management, Systemd & Complete Boot Chain**
-
+---
 12. **The Complete Linux Boot Chain:** Stages: `UEFI/BIOS` -> `GRUB2` (kernel arguments, `init=/bin/bash` recovery) -> `initramfs` (early storage drivers) -> Kernel execution -> `systemd (PID 1)`.
 13. **Systemd Service Unit Architecture:** Custom unit paths (`/etc/systemd/system/` vs `/lib/systemd/system/`); unit dependencies (`After=` vs `Wants=` vs `Requires=`); lifecycle controls (`Type=simple`, `User=`, `Restart=always`, `RestartSec=`, `LimitNOFILE=`).
 14. **Process Sandboxing & Kernel Governance:** cgroups v2 integration directly inside unit files (`MemoryMax=`, `CPUQuota=`); filesystem isolation (`ProtectSystem=strict`, `ProtectHome=true`, `PrivateTmp=true`, `NoNewPrivileges=true`).
@@ -32,7 +30,7 @@
 ---
 
 #### **Phase 4: Low-Level Networking, Sockets & Packet Filtering**
-
+---
 17. **Modern Interface & Route Triage:** Replacing net-tools with iproute2 (`ip -br addr`, `ip route`, `ip neighbor`).
 18. **Socket Lifecycles & State Machines:** Low-level socket inspection via `ss -tlpn` and `ss -s`; `TIME_WAIT` accumulation (ephemeral port exhaustion) vs `CLOSE_WAIT` leaks (unclosed application descriptors).
 19. **Packet Filtering & Firewall Mechanics:** Netfilter packet lifecycle hooks (`PREROUTING`, `INPUT`, `FORWARD`, `OUTPUT`, `POSTROUTING`); `DROP` (silent timeout) vs `REJECT` (immediate RST); rule counter auditing (`iptables -L -n -v --line-numbers`) and rule insertion (`-I` vs `-A`).
