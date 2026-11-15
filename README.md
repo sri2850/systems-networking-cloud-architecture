@@ -4,6 +4,7 @@
 
 #### **Phase 1: Process, CPU, Memory Internals & Core Shell Tooling**
 
+
 1. **Process Lifecycles & Signals:** States (`R`, `S`, `D`, `Z`); defunct & orphan processes; why `kill -9` fails on zombies; reaping via PID 1 (`systemd`).
 2. **File Descriptors & Inode Mechanics:** Virtual filesystem tables (`/proc/<PID>/fd/`); resolving 100% ghost disk leaks from deleted-but-open files via truncation (`: > /proc/<PID>/fd/<FD>`).
 3. **Memory Sizing & Paging Mechanics:** VSS (`VmSize`) vs RSS (`VmRSS`) vs PSS (`/proc/<PID>/smaps_rollup`); page cache, dirty pages writeback daemon (`kswapd`/`flush`), and swap thrashing diagnostics.
